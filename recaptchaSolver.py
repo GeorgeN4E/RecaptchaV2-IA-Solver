@@ -74,13 +74,18 @@ def get_target_num(driver):
         "traffic": 9
     }
 
-    target = WebDriverWait(driver, 10).until(EC.presence_of_element_located(
-        (By.XPATH, '//div[@id="rc-imageselect"]//strong')))
-    
-    for term, value in target_mappings.items():
-        if re.search(term, target.text): return value
+    try:
+        target = WebDriverWait(driver, 10).until(EC.presence_of_element_located(
+            (By.XPATH, '//div[@id="rc-imageselect"]//strong')))
+    except TimeoutException:
+        print("Error: Unable to find the target number text.")
+        return 1000
 
+    for term, value in target_mappings.items():
+        if re.search(term, target.text):
+            return value
     return 1000
+
 
 
 def dynamic_and_selection_solver(target_num, verbose, model):
@@ -138,16 +143,26 @@ def get_all_captcha_img_urls(driver):
     return img_urls
 
 
+from pathlib import Path
+
 def download_img(name, url):
     """
     Download the image.
     :param name: name of the image.
     :param url: url of the image.
     """
+    img_path = Path(f'{name}.png')
+    try:
+        response = requests.get(url, stream=True, timeout=10)
+        if response.status_code == 200:
+            with open(img_path, 'wb') as out_file:
+                shutil.copyfileobj(response.raw, out_file)
+        else:
+            print(f"Failed to download image from {url}")
+    except Exception as e:
+        print(f"Error downloading image {name}: {e}")
 
-    response = requests.get(url, stream=True)
-    with open(f'{name}.png', 'wb') as out_file: shutil.copyfileobj(response.raw, out_file)
-    del response
+
 
 
 def get_all_new_dynamic_captcha_img_urls(answers, before_img_urls, driver):
@@ -441,7 +456,7 @@ def solve_recaptcha(driver, verbose):
             print(e)
 
 
-def solver(url: str, cookies: dict=None, proxy: str=None, verbose=False, headless=True):
+def solver(url: str, cookies: dict=None, proxy: str=None, verbose=False, headless=False):
     """
     Solve the recaptcha.
     :param url: url of the recaptcha.
@@ -475,13 +490,17 @@ def solver(url: str, cookies: dict=None, proxy: str=None, verbose=False, headles
     chrome_options.add_argument('--ignore-certificate-errors-spki-list')
     chrome_options.add_argument('--ignore-ssl-errors')
     chrome_options.add_argument('--lang=en-US')
+
+    chrome_options.add_argument('--ignore-certificate-errors')
+    chrome_options.add_argument('--ignore-ssl-errors')
     if headless:
         chrome_options.add_argument('--headless')
         chrome_prefs = {"profile.managed_default_content_settings.images": 2}
         chrome_options.add_experimental_option("prefs", chrome_prefs)
+    
 
     # Initialize driver with options and cookies if provided
-    driver = webdriver.Chrome(options=chrome_options, seleniumwire_options=seleniumwire_options)
+    driver = webdriver.Chrome(options=chrome_options, seleniumwire_options=seleniumwire_options,executable_path=r"D:\\Sublime Text\\Python\\RecaptchaV2-IA-Solver\\chromedriver.exe")
     driver.scopes = ['.*google.com/recaptcha.*']
     if cookies: driver.add_cookie(cookies)
 
