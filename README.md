@@ -28,6 +28,9 @@ print(data)
 
 Note: You must install the seleniumwire certificate following these [instructions](https://github.com/wkeeling/selenium-wire#certificates)
 
+You also must install selenium-utilities using 3rd party website using these [instructions](https://dashboard.stablebuild.com/pypi-deleted-packages/pkg/selenium-utilities)
+
+
 ## Requirements
 
 * python 3.x
